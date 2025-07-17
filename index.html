@@ -1,0 +1,752 @@
+
+
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Production Priority Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Prompt', sans-serif;
+            background-color: #f0f4f8;
+        }
+        .priority-high {
+            background-color: #fee2e2;
+            border-left: 4px solid #ef4444;
+        }
+        .priority-medium {
+            background-color: #fef3c7;
+            border-left: 4px solid #f59e0b;
+        }
+        .priority-low {
+            background-color: #dcfce7;
+            border-left: 4px solid #22c55e;
+        }
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+        }
+        .status-red {
+            background-color: #ef4444;
+        }
+        .status-yellow {
+            background-color: #f59e0b;
+        }
+        .status-green {
+            background-color: #22c55e;
+        }
+        .job-card {
+            transition: all 0.3s ease;
+        }
+        .job-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .filter-active {
+            background-color: #1e40af;
+            color: white;
+        }
+        .table-header {
+            position: sticky;
+            top: 0;
+            background-color: #1e40af;
+            color: white;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <div class="min-h-screen bg-gradient-to-b from-blue-50 to-blue-100">
+        <header class="bg-blue-800 text-white shadow-lg">
+            <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+                <div>
+                    <h1 class="text-2xl font-bold">Production Priority Dashboard</h1>
+                    <p class="text-blue-200">อัพเดทล่าสุด: <span id="last-updated">15 พ.ค. 2023 14:30</span></p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="bg-blue-700 px-4 py-2 rounded-lg">
+                        <span class="font-semibold">สถานะการผลิต:</span>
+                        <span class="ml-2 px-3 py-1 bg-green-500 text-white rounded-full">กำลังผลิต</span>
+                    </div>
+                    <button id="refresh-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        รีเฟรช
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <div class="container mx-auto px-4 py-6">
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-red-500">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-gray-500 text-sm">งานด่วนมาก</p>
+                            <p class="text-2xl font-bold text-gray-800">5</p>
+                        </div>
+                        <div class="bg-red-100 p-3 rounded-full">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500">Shotline</span>
+                            <span class="font-medium">3</span>
+                        </div>
+                        <div class="flex justify-between text-sm mt-1">
+                            <span class="text-gray-500">Kanban</span>
+                            <span class="font-medium">2</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-yellow-500">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-gray-500 text-sm">งานปานกลาง</p>
+                            <p class="text-2xl font-bold text-gray-800">8</p>
+                        </div>
+                        <div class="bg-yellow-100 p-3 rounded-full">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500">Kanban</span>
+                            <span class="font-medium">5</span>
+                        </div>
+                        <div class="flex justify-between text-sm mt-1">
+                            <span class="text-gray-500">Manual</span>
+                            <span class="font-medium">3</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-green-500">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-gray-500 text-sm">งานตามแผน</p>
+                            <p class="text-2xl font-bold text-gray-800">12</p>
+                        </div>
+                        <div class="bg-green-100 p-3 rounded-full">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500">Manual</span>
+                            <span class="font-medium">12</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-blue-500">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-gray-500 text-sm">งานทั้งหมด</p>
+                            <p class="text-2xl font-bold text-gray-800">25</p>
+                        </div>
+                        <div class="bg-blue-100 p-3 rounded-full">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                            <div class="bg-blue-600 h-2.5 rounded-full" style="width: 45%"></div>
+                        </div>
+                        <div class="flex justify-between text-sm mt-1">
+                            <span class="text-gray-500">ความคืบหน้า</span>
+                            <span class="font-medium">45%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">ตัวกรองข้อมูล</h2>
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">ไลน์ผลิต</label>
+                        <select id="line-filter" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">ทั้งหมด</option>
+                            <option value="Line A">Line A</option>
+                            <option value="Line B">Line B</option>
+                            <option value="Line C">Line C</option>
+                            <option value="Line D">Line D</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">แม่พิมพ์</label>
+                        <select id="mold-filter" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">ทั้งหมด</option>
+                            <option value="M001">M001</option>
+                            <option value="M002">M002</option>
+                            <option value="M003">M003</option>
+                            <option value="M004">M004</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">SKU</label>
+                        <input type="text" id="sku-filter" placeholder="ค้นหา SKU" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">ลูกค้า</label>
+                        <select id="customer-filter" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">ทั้งหมด</option>
+                            <option value="บริษัท A">บริษัท A</option>
+                            <option value="บริษัท B">บริษัท B</option>
+                            <option value="บริษัท C">บริษัท C</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">ประเภทคำสั่ง</label>
+                        <div class="flex space-x-2">
+                            <button class="filter-btn px-3 py-2 rounded-lg border border-gray-300 hover:bg-blue-100 flex-1 text-sm" data-type="all">ทั้งหมด</button>
+                            <button class="filter-btn px-3 py-2 rounded-lg border border-gray-300 hover:bg-blue-100 flex-1 text-sm" data-type="shotline">Shotline</button>
+                            <button class="filter-btn px-3 py-2 rounded-lg border border-gray-300 hover:bg-blue-100 flex-1 text-sm" data-type="kanban">Kanban</button>
+                            <button class="filter-btn px-3 py-2 rounded-lg border border-gray-300 hover:bg-blue-100 flex-1 text-sm" data-type="manual">Manual</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-4 flex justify-end">
+                    <button id="apply-filter" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                        </svg>
+                        กรองข้อมูล
+                    </button>
+                </div>
+            </div>
+
+            <!-- Production Schedule -->
+            <div class="bg-white rounded-xl shadow-md overflow-hidden mb-6">
+                <div class="p-6 bg-blue-800 text-white">
+                    <h2 class="text-xl font-semibold">ตารางลำดับการผลิต</h2>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="table-header">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">ลำดับ</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">ประเภท</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">SKU</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">ลูกค้า</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">ไลน์</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">แม่พิมพ์</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">กำหนดส่ง</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">สถานะสต๊อก</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">เวลา Setup</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">เวลาเริ่ม-สิ้นสุด</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">สถานะ</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">การดำเนินการ</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <!-- Job 1 - Shotline (High Priority) -->
+                            <tr class="priority-high job-card">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900">1</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                        Shotline
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">SKU-10045</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">บริษัท A</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">Line A</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">M001</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-red-600 font-medium">15 พ.ค. 2023 (วันนี้)</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <span class="status-indicator status-red"></span>
+                                        <span class="text-sm text-gray-900">ต่ำกว่า Min (10/100)</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">30 นาที</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">14:30 - 16:30</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                        กำลังผลิต
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <button class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-lg text-sm" disabled>
+                                        เริ่มผลิตแล้ว
+                                    </button>
+                                </td>
+                            </tr>
+
+                            <!-- Job 2 - Shotline (High Priority) -->
+                            <tr class="priority-high job-card">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900">2</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                        Shotline
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">SKU-10089</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">บริษัท B</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">Line B</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">M002</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-red-600 font-medium">15 พ.ค. 2023 (วันนี้)</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <span class="status-indicator status-red"></span>
+                                        <span class="text-sm text-gray-900">ต่ำกว่า Min (5/50)</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">45 นาที</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">16:30 - 18:30</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                        รอผลิต
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-lg text-sm">
+                                        เริ่มผลิต
+                                    </button>
+                                </td>
+                            </tr>
+
+                            <!-- Job 3 - Kanban (Medium Priority) -->
+                            <tr class="priority-medium job-card">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900">3</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                        Kanban
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">SKU-20056</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">บริษัท A</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">Line C</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">M003</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-orange-600">16 พ.ค. 2023 (พรุ่งนี้)</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <span class="status-indicator status-yellow"></span>
+                                        <span class="text-sm text-gray-900">ใกล้ Min (30/80)</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">20 นาที</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">08:00 - 10:00</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                                        วางแผน
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-lg text-sm">
+                                        เริ่มผลิต
+                                    </button>
+                                </td>
+                            </tr>
+
+                            <!-- Job 4 - Kanban (Medium Priority) -->
+                            <tr class="priority-medium job-card">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900">4</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                        Kanban
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">SKU-20078</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">บริษัท C</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">Line A</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">M001</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-orange-600">16 พ.ค. 2023 (พรุ่งนี้)</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <span class="status-indicator status-yellow"></span>
+                                        <span class="text-sm text-gray-900">ใกล้ Min (25/60)</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">15 นาที</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">10:00 - 12:00</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                                        วางแผน
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-lg text-sm">
+                                        เริ่มผลิต
+                                    </button>
+                                </td>
+                            </tr>
+
+                            <!-- Job 5 - Manual (Low Priority) -->
+                            <tr class="priority-low job-card">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900">5</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                        Manual
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">SKU-30012</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">บริษัท B</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">Line D</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">M004</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-600">18 พ.ค. 2023</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <span class="status-indicator status-green"></span>
+                                        <span class="text-sm text-gray-900">เพียงพอ (120/200)</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">60 นาที</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">13:00 - 16:00</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                                        วางแผน
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-lg text-sm">
+                                        เริ่มผลิต
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <!-- Production by Line Chart -->
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4">การผลิตตามไลน์</h2>
+                    <div class="h-64">
+                        <canvas id="productionByLineChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Stock Status Chart -->
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4">สถานะสต๊อก</h2>
+                    <div class="h-64">
+                        <canvas id="stockStatusChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Timeline Section -->
+            <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">ไทม์ไลน์การผลิต (วันนี้)</h2>
+                <div class="relative">
+                    <!-- Timeline Header -->
+                    <div class="flex border-b border-gray-200 pb-2">
+                        <div class="w-1/6 font-medium text-gray-700">ไลน์</div>
+                        <div class="w-5/6 flex">
+                            <div class="flex-1 text-center text-sm text-gray-600">8:00</div>
+                            <div class="flex-1 text-center text-sm text-gray-600">10:00</div>
+                            <div class="flex-1 text-center text-sm text-gray-600">12:00</div>
+                            <div class="flex-1 text-center text-sm text-gray-600">14:00</div>
+                            <div class="flex-1 text-center text-sm text-gray-600">16:00</div>
+                            <div class="flex-1 text-center text-sm text-gray-600">18:00</div>
+                            <div class="flex-1 text-center text-sm text-gray-600">20:00</div>
+                        </div>
+                    </div>
+
+                    <!-- Timeline Content -->
+                    <div class="mt-4 space-y-4">
+                        <!-- Line A -->
+                        <div class="flex items-center">
+                            <div class="w-1/6 font-medium text-gray-700">Line A</div>
+                            <div class="w-5/6 relative h-8">
+                                <div class="absolute left-[30%] right-[50%] h-full bg-red-200 rounded-lg flex items-center justify-center text-xs font-medium text-red-800 border border-red-300" title="SKU-10045 (Shotline)">
+                                    SKU-10045
+                                </div>
+                                <div class="absolute left-[50%] right-[20%] h-full bg-yellow-200 rounded-lg flex items-center justify-center text-xs font-medium text-yellow-800 border border-yellow-300" title="SKU-20078 (Kanban)">
+                                    SKU-20078
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Line B -->
+                        <div class="flex items-center">
+                            <div class="w-1/6 font-medium text-gray-700">Line B</div>
+                            <div class="w-5/6 relative h-8">
+                                <div class="absolute left-[60%] right-[20%] h-full bg-red-200 rounded-lg flex items-center justify-center text-xs font-medium text-red-800 border border-red-300" title="SKU-10089 (Shotline)">
+                                    SKU-10089
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Line C -->
+                        <div class="flex items-center">
+                            <div class="w-1/6 font-medium text-gray-700">Line C</div>
+                            <div class="w-5/6 relative h-8">
+                                <div class="absolute left-[0%] right-[70%] h-full bg-yellow-200 rounded-lg flex items-center justify-center text-xs font-medium text-yellow-800 border border-yellow-300" title="SKU-20056 (Kanban)">
+                                    SKU-20056
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Line D -->
+                        <div class="flex items-center">
+                            <div class="w-1/6 font-medium text-gray-700">Line D</div>
+                            <div class="w-5/6 relative h-8">
+                                <div class="absolute left-[55%] right-[20%] h-full bg-green-200 rounded-lg flex items-center justify-center text-xs font-medium text-green-800 border border-green-300" title="SKU-30012 (Manual)">
+                                    SKU-30012
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Current Time Indicator -->
+                    <div class="absolute top-0 bottom-0 w-px bg-red-500 left-[42%]" style="z-index: 5;">
+                        <div class="absolute -top-2 -left-2 w-4 h-4 rounded-full bg-red-500"></div>
+                        <div class="absolute -top-7 -translate-x-1/2 bg-red-500 text-white px-2 py-1 rounded text-xs whitespace-nowrap">
+                            14:30 (ปัจจุบัน)
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize charts when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Production by Line Chart
+            const lineCtx = document.getElementById('productionByLineChart').getContext('2d');
+            const lineChart = new Chart(lineCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Line A', 'Line B', 'Line C', 'Line D'],
+                    datasets: [
+                        {
+                            label: 'Shotline',
+                            data: [1, 1, 0, 0],
+                            backgroundColor: '#fee2e2',
+                            borderColor: '#ef4444',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Kanban',
+                            data: [1, 0, 1, 0],
+                            backgroundColor: '#fef3c7',
+                            borderColor: '#f59e0b',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Manual',
+                            data: [0, 0, 0, 1],
+                            backgroundColor: '#dcfce7',
+                            borderColor: '#22c55e',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            stacked: true,
+                        },
+                        y: {
+                            stacked: true,
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Stock Status Chart
+            const stockCtx = document.getElementById('stockStatusChart').getContext('2d');
+            const stockChart = new Chart(stockCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['ต่ำกว่า Min', 'ใกล้ Min', 'เพียงพอ'],
+                    datasets: [{
+                        data: [2, 2, 1],
+                        backgroundColor: [
+                            '#ef4444',
+                            '#f59e0b',
+                            '#22c55e'
+                        ],
+                        borderColor: [
+                            '#fee2e2',
+                            '#fef3c7',
+                            '#dcfce7'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                        }
+                    }
+                }
+            });
+
+            // Filter buttons functionality
+            const filterButtons = document.querySelectorAll('.filter-btn');
+            filterButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    filterButtons.forEach(btn => btn.classList.remove('filter-active'));
+                    this.classList.add('filter-active');
+                });
+            });
+
+            // Set current date and time
+            function updateDateTime() {
+                const now = new Date();
+                const options = { 
+                    year: 'numeric', 
+                    month: 'short', 
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                };
+                document.getElementById('last-updated').textContent = now.toLocaleDateString('th-TH', options);
+            }
+            
+            updateDateTime();
+            
+            // Refresh button functionality
+            document.getElementById('refresh-btn').addEventListener('click', function() {
+                updateDateTime();
+                // Here you would typically fetch new data from your backend
+                alert('กำลังรีเฟรชข้อมูล...');
+            });
+
+            // Apply filter button functionality
+            document.getElementById('apply-filter').addEventListener('click', function() {
+                const line = document.getElementById('line-filter').value;
+                const mold = document.getElementById('mold-filter').value;
+                const sku = document.getElementById('sku-filter').value;
+                const customer = document.getElementById('customer-filter').value;
+                
+                // Here you would typically filter the data based on the selected criteria
+                alert(`กำลังกรองข้อมูล: ไลน์=${line}, แม่พิมพ์=${mold}, SKU=${sku}, ลูกค้า=${customer}`);
+            });
+
+            // Start production button functionality
+            const startButtons = document.querySelectorAll('button:not([disabled])');
+            startButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    if (this.textContent.trim() === 'เริ่มผลิต') {
+                        this.textContent = 'เริ่มผลิตแล้ว';
+                        this.classList.remove('bg-blue-500', 'hover:bg-blue-600');
+                        this.classList.add('bg-green-500', 'hover:bg-green-600');
+                        this.disabled = true;
+                        
+                        // Update the status cell in the same row
+                        const statusCell = this.closest('tr').querySelector('td:nth-last-child(2)');
+                        statusCell.innerHTML = '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">กำลังผลิต</span>';
+                    }
+                });
+            });
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9606952d10d3a1c0',t:'MTc1MjcyMjIwOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
